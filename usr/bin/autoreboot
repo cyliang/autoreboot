@@ -1,11 +1,14 @@
 #! /usr/bin/python
 
 import time
+import argparse
 
 class AutoRebootD(object):
     target_tty = '/dev/tty0'
     frequency = 300
     warning_msg = "Hello World!\n"
+    enable_config = "/etc/autoreboot.conf"
+    yes_str, no_str = "YES", "NO"
 
     def main_loop(self):
         """The infinite loop to keep checking whether to reboot"""
@@ -19,7 +22,15 @@ class AutoRebootD(object):
 
     def is_enabled(self):
         """Check if this daemon is enabled and return a boolean value."""
-        return True
+        try:
+            return open(self.enable_config, 'r').read().upper() == self.yes_str.upper()
+        except IOError as e:
+            return False
+
+    @classmethod
+    def enable(cls, yes_no):
+        open(cls.enable_config, 'w').write(cls.yes_str if yes_no else cls.no_str)
+        return yes_no
 
     def clear_tty(self):
         """Clear the tty to make the wanring more noticeable."""
@@ -31,4 +42,22 @@ class AutoRebootD(object):
 
 
 if __name__ == '__main__':
-    AutoRebootD().main_loop()
+    parser = argparse.ArgumentParser(description="Automatic Reboot Daemon Controller")
+    commands = parser.add_subparsers(title="Commands", description="The commands to control the daemon")
+
+    cmd_enable = commands.add_parser('enable', help="Enable automatic reboot checking.")
+    cmd_enable.set_defaults(func=lambda args:
+        AutoRebootD.enable(True)
+    )
+
+    cmd_disable = commands.add_parser('disable', help="Disable automatic reboot checking.")
+    cmd_disable.set_defaults(func=lambda args:
+        AutoRebootD.enable(False)
+    )
+
+    cmd_start = commands.add_parser('start', help="You SHOULD NOT launch with this command.")
+    cmd_start.set_defaults(func=lambda args:
+        AutoRebootD().main_loop()
+    )
+
+    args = parser.parse_args()
