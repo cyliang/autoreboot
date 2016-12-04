@@ -4,34 +4,60 @@ import time
 import argparse
 import sys
 import os
+import socket
 
 class AutoRebootD(object):
+    test_host = '127.0.0.1'
     target_tty = '/dev/tty0'
     frequency = 300
+    wait_reboot = 20
     warning_msg = "Hello World!\n"
     enable_config = "/etc/autoreboot.conf"
     yes_str, no_str = "YES", "NO"
 
     def main_loop(self):
         """The infinite loop to keep checking whether to reboot"""
-        while (True):
-            if self.is_enabled():
-                self.clear_tty()
-                self.write_tty(self.warning_msg)
+        count = 0
+        while True:
+            if self.is_enabled() and not self.check_condition():
+                count += 1
+
+                if count >= 2:
+                    self.clear_tty()
+                    self.write_tty(self.warning_msg)
+
+                    time.sleep(self.wait_reboot)
+                    # Reboot
+            else:
+                count = 0
 
             # Check every `frequency` seconds
             time.sleep(self.frequency)
+
+    def check_condition(self):
+        """Try to connect some host to check if network is alive."""
+        try_count = 5
+        while try_count > 0:
+            try:
+                socket.create_connection((self.test_host, 22))
+                return True
+            except socket.error:
+                pass
+
+            try_count -= 1
+        return False
 
     @classmethod
     def is_enabled(cls):
         """Check if this daemon is enabled and return a boolean value."""
         try:
             return open(cls.enable_config, 'r').read().upper() == cls.yes_str.upper()
-        except IOError as e:
+        except IOError:
             return False
 
     @classmethod
     def enable(cls, yes_no):
+        """Enable or disable this daemon depending on `yes_no`."""
         open(cls.enable_config, 'w').write(cls.yes_str if yes_no else cls.no_str)
         return yes_no
 
@@ -50,6 +76,11 @@ def check_root():
         sys.exit("This command requires root permission.")
     return True
 
+def _print(msg):
+    """To make print available in lambda functions."""
+    print msg
+    return True
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Automatic Reboot Daemon Controller")
     commands = parser.add_subparsers(title="Commands", description="The commands to control the daemon")
@@ -66,7 +97,7 @@ if __name__ == '__main__':
 
     cmd_status = commands.add_parser('status', help="Show if automatic reboot checking is enabled.")
     cmd_status.set_defaults(func=lambda args:
-        print ("Automatic reboot checking is %s." % ('enabled' if AutoRebootD.is_enabled() else 'disabled'))
+        _print("Automatic reboot checking is %s." % ('enabled' if AutoRebootD.is_enabled() else 'disabled'))
     )
 
     cmd_start = commands.add_parser('start', help="You SHOULD NOT launch with this command.")
