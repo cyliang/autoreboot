@@ -2,6 +2,8 @@
 
 import time
 import argparse
+import sys
+import os
 
 class AutoRebootD(object):
     target_tty = '/dev/tty0'
@@ -20,10 +22,11 @@ class AutoRebootD(object):
             # Check every `frequency` seconds
             time.sleep(self.frequency)
 
-    def is_enabled(self):
+    @classmethod
+    def is_enabled(cls):
         """Check if this daemon is enabled and return a boolean value."""
         try:
-            return open(self.enable_config, 'r').read().upper() == self.yes_str.upper()
+            return open(cls.enable_config, 'r').read().upper() == cls.yes_str.upper()
         except IOError as e:
             return False
 
@@ -33,7 +36,7 @@ class AutoRebootD(object):
         return yes_no
 
     def clear_tty(self):
-        """Clear the tty to make the wanring more noticeable."""
+        """Clear the tty to make the warning more noticeable."""
         self.write_tty('\033c')
 
     def write_tty(self, msg):
@@ -41,23 +44,34 @@ class AutoRebootD(object):
         return open(self.target_tty, 'w').write(msg)
 
 
+def check_root():
+    """Check if the user launching this program has root permission."""
+    if os.geteuid() != 0:
+        sys.exit("This command requires root permission.")
+    return True
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Automatic Reboot Daemon Controller")
     commands = parser.add_subparsers(title="Commands", description="The commands to control the daemon")
 
     cmd_enable = commands.add_parser('enable', help="Enable automatic reboot checking.")
     cmd_enable.set_defaults(func=lambda args:
-        AutoRebootD.enable(True)
+        check_root() and AutoRebootD.enable(True)
     )
 
     cmd_disable = commands.add_parser('disable', help="Disable automatic reboot checking.")
     cmd_disable.set_defaults(func=lambda args:
-        AutoRebootD.enable(False)
+        check_root() and AutoRebootD.enable(False)
+    )
+
+    cmd_status = commands.add_parser('status', help="Show if automatic reboot checking is enabled.")
+    cmd_status.set_defaults(func=lambda args:
+        print ("Automatic reboot checking is %s." % ('enabled' if AutoRebootD.is_enabled() else 'disabled'))
     )
 
     cmd_start = commands.add_parser('start', help="You SHOULD NOT launch with this command.")
     cmd_start.set_defaults(func=lambda args:
-        AutoRebootD().main_loop()
+        check_root() and AutoRebootD().main_loop()
     )
 
     args = parser.parse_args()
