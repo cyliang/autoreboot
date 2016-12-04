@@ -1,0 +1,7 @@
+debian/debhelper.log
+debian/files
+debian/postinst.debhelper
+debian/prerm.debhelper
+debian/substvars
+debian/tmp
+debian/postrm.debhelper

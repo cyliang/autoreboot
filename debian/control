@@ -1,0 +1,21 @@
+Source: autoreboot
+Section: misc
+Priority: optional
+Maintainer: Chih-Yung Liang <r05944012@csie.ntu.edu.tw>
+Build-Depends: debhelper (>= 9), dh-systemd (>= 1.5)
+Standards-Version: 0.0.1
+
+Package: autoreboot
+Architecture: all
+Depends: python2.7
+Description:
+	This is a package that runs a daemon to automatically
+	check if the system is reboot-required. The reboot
+	condition is set to be when network is not available.
+	This package is especially helpful for HSA-compatiable
+	machines because such machines often suffer from suddenly
+	broken IOMMU. It would be very inconvenient if network
+	becomes unavailable on some occasion that the user is
+	accessing the machine via a remote connection. This
+	package also provide commands to manually enable/disable
+	automatic reboot checking.
