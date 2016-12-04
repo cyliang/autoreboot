@@ -27,7 +27,7 @@ class AutoRebootD(object):
                     self.write_tty(self.warning_msg)
 
                     time.sleep(self.wait_reboot)
-                    # Reboot
+                    self.action()
             else:
                 count = 0
 
@@ -46,6 +46,10 @@ class AutoRebootD(object):
 
             try_count -= 1
         return False
+
+    def action(self):
+        """The action if condition keeps failing."""
+        os.system('reboot')
 
     @classmethod
     def is_enabled(cls):
