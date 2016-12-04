@@ -1,3 +1,9 @@
+autoreboot (0.0.2-1) unstable; urgency=low
+
+  * Fix that python script not executed.
+
+ -- Chih-Yung Liang <r05944012@csie.ntu.edu.tw>  Sun, 4 Dec 2016 23:59:00 +0800
+
 autoreboot (0.0.1-1) unstable; urgency=low
 
   * Initial release
